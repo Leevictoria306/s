@@ -2,6 +2,7 @@ import os
 import subprocess
 import requests
 import argparse
+import shutil
 
 # === CLI args ===
 parser = argparse.ArgumentParser(description="Scan all repos of a GitHub user/org with Gitleaks")
@@ -15,6 +16,18 @@ CONFIG_FILE = "custgitleaks.toml"
 OUTPUT_DIR = "gitleaks_reports"
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# === Check if gitleaks is installed, if not download & install ===
+if not shutil.which("gitleaks"):
+    print("[!] gitleaks not found. Installing...")
+    subprocess.run([
+        "wget", "-q",
+        "https://github.com/gitleaks/gitleaks/releases/download/v8.28.0/gitleaks_8.28.0_linux_x64.tar.gz"
+    ], check=True)
+    subprocess.run(["tar", "-xzf", "gitleaks_8.28.0_linux_x64.tar.gz"], check=True)
+    subprocess.run(["mv", "gitleaks", "/usr/local/bin/"], check=True)
+    subprocess.run(["chmod", "+x", "/usr/local/bin/gitleaks"], check=True)
+    print("[+] gitleaks installed successfully")
 
 # === Ensure customgitleaks.toml exists ===
 if not os.path.exists(CONFIG_FILE):
