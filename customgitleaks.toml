@@ -3173,6 +3173,6 @@ keywords = ["zendesk"]
 [[rules]]
 id = "gmail-smtp-pass"
 description = "My Custom API Key Rule"
-regex = '''[a-z]{4}[ ][a-z]{4}[ ][a-z]{4}[ ][a-z]{4}'''
+regex = '''\b[a-z]{4}[ ][a-z]{4}[ ][a-z]{4}[ ][a-z]{4}\b'''
 entropy = 2
 keywords = ["gmail"]
