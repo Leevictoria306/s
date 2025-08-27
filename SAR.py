@@ -3,11 +3,13 @@ import subprocess
 import requests
 import argparse
 import shutil
+import json
 
 # === CLI args ===
 parser = argparse.ArgumentParser(description="Scan all repos of a GitHub user/org with Gitleaks")
 parser.add_argument("--user", required=True, help="GitHub username or org")
 parser.add_argument("--token", help="GitHub token for private repos")
+parser.add_argument("--exclude-forks", action="store_true", help="Exclude forked repos")
 args = parser.parse_args()
 
 GITHUB_USER = args.user
@@ -17,7 +19,13 @@ OUTPUT_DIR = "gitleaks_reports"
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# === Check if gitleaks is installed, if not download & install ===
+# === Colors ===
+PURPLE = "\033[1;35m"
+BOLD_YELLOW = "\033[1;33m"
+BOLD_RED = "\033[1;31m"
+RESET = "\033[0m"
+
+# === Check if gitleaks is installed ===
 if not shutil.which("gitleaks"):
     print("[!] gitleaks not found. Installing...")
     subprocess.run([
@@ -50,26 +58,33 @@ while True:
     url = f"https://api.github.com/users/{GITHUB_USER}/repos?per_page=100&page={page}"
     r = requests.get(url, headers=headers)
     data = r.json()
-    if not data or "message" in data:  # no more repos or error
+    if not data or "message" in data:
         break
-    repos.extend([repo["clone_url"] for repo in data])
+    for repo in data:
+        if args.exclude_forks and repo.get("fork"):
+            continue
+        repos.append(repo["clone_url"])
     page += 1
 
-print(f"\n[+] Found {len(repos)} repos for {GITHUB_USER}")
+print(f"\n[+] Found {len(repos)} repos for {GITHUB_USER} (exclude forks: {args.exclude_forks})")
 
-# === Colors ===
-BOLD_PURPLE = "\033[1;35m"
-RESET = "\033[0m"
+# === Deduplication store ===
+seen_secrets = set()
+all_findings = []
 
 # === Clone + run gitleaks ===
 for repo_url in repos:
     name = repo_url.split("/")[-1].replace(".git", "")
-    print(f"\n{BOLD_PURPLE}>>> Scanning repo:{name} ...{RESET}")
+    print(f"\n{PURPLE}[+] >>> Scanning {name}{RESET}")
 
-    # clone
+    # cleanup old repo if exists
+    if os.path.exists(name):
+        shutil.rmtree(name)
+
+    # clone repo fresh
     subprocess.run(["git", "clone", "--quiet", repo_url, name], check=True)
 
-    # run gitleaks
+    # run gitleaks (JSON only, no banner/verbose)
     report_path = os.path.join(OUTPUT_DIR, f"{name}.json")
     subprocess.run([
         "gitleaks", "detect",
@@ -77,14 +92,45 @@ for repo_url in repos:
         "--config", CONFIG_FILE,
         "--report-format", "json",
         "--report-path", report_path,
-        "--verbose",
         "--no-banner"
     ], check=False)
 
+    # parse results
+    if os.path.exists(report_path):
+        try:
+            with open(report_path, "r") as f:
+                findings = json.load(f)
+
+            unique_findings = []
+            for finding in findings:
+                secret_value = finding.get("Secret")
+                if secret_value and secret_value not in seen_secrets:
+                    seen_secrets.add(secret_value)
+                    unique_findings.append(finding)
+                    all_findings.append(finding)
+
+                    # === pretty print finding ===
+                    print(f"Finding:           {finding.get('Match')}")
+                    print(f"Secret:            {BOLD_RED}{secret_value}{RESET}")
+                    print(f"RuleID:            {BOLD_YELLOW}{finding.get('RuleID')}{RESET}")
+                    print(f"Entropy:           {finding.get('Entropy')}")
+                    print(f"Date:              {finding.get('Date')}")
+                    print(f"Link:              {PURPLE}{finding.get('Link')}{RESET}\n")
+
+            # overwrite with deduped findings
+            with open(report_path, "w") as f:
+                json.dump(unique_findings, f, indent=2)
+
+        except Exception as e:
+            print(f"[x] Failed to parse report for {name}: {e}")
+
     # cleanup repo
-    subprocess.run(["rm", "-rf", name])
+    shutil.rmtree(name, ignore_errors=True)
 
-print(f"\n✅ Done! Reports saved in {OUTPUT_DIR}/")
+# === Save global merged report ===
+merged_report_path = os.path.join(OUTPUT_DIR, "all_repos_deduped.json")
+with open(merged_report_path, "w") as f:
+    json.dump(all_findings, f, indent=2)
 
-
-
+print(f"\n✅ Done! Reports saved in {OUTPUT_DIR}/ (deduplicated)")
+print(f"   Global deduped report: {merged_report_path}")
