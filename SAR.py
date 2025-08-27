@@ -58,13 +58,13 @@ while True:
 print(f"\n[+] Found {len(repos)} repos for {GITHUB_USER}")
 
 # === Colors ===
-BOLD_YELLOW = "\033[1;33m"
+BOLD_PURPLE = "\033[1;35m"
 RESET = "\033[0m"
 
 # === Clone + run gitleaks ===
 for repo_url in repos:
     name = repo_url.split("/")[-1].replace(".git", "")
-    print(f"\n{BOLD_YELLOW}>>> Scanning {name} ...{RESET}")
+    print(f"\n{BOLD_YELLOW}>>> Scanning repo:{name} ...{RESET}")
 
     # clone
     subprocess.run(["git", "clone", "--quiet", repo_url, name], check=True)
@@ -85,3 +85,4 @@ for repo_url in repos:
     subprocess.run(["rm", "-rf", name])
 
 print(f"\n✅ Done! Reports saved in {OUTPUT_DIR}/")
+
