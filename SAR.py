@@ -12,7 +12,7 @@ args = parser.parse_args()
 
 GITHUB_USER = args.user
 GITHUB_TOKEN = args.token
-CONFIG_FILE = "custgitleaks.toml"
+CONFIG_FILE = "custGL.toml"
 OUTPUT_DIR = "gitleaks_reports"
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -32,7 +32,7 @@ if not shutil.which("gitleaks"):
 # === Ensure customgitleaks.toml exists ===
 if not os.path.exists(CONFIG_FILE):
     print(f"[!] {CONFIG_FILE} not found. Downloading...")
-    url = "https://raw.githubusercontent.com/Leevictoria306/s/refs/heads/main/custgitleaks.toml"
+    url = "https://raw.githubusercontent.com/Leevictoria306/s/refs/heads/main/custGL.toml"
     r = requests.get(url)
     if r.status_code == 200:
         with open(CONFIG_FILE, "w") as f:
@@ -85,4 +85,5 @@ for repo_url in repos:
     subprocess.run(["rm", "-rf", name])
 
 print(f"\n✅ Done! Reports saved in {OUTPUT_DIR}/")
+
 
