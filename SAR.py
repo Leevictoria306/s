@@ -26,7 +26,7 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 # === Colors ===
 PURPLE = "\033[1;35m"
 BOLD_YELLOW = "\033[1;33m"
-BRIGHT_RED = "\033[91m"
+BRIGHT_RED = "\033[1;91m"
 RESET = "\033[0m"
 
 # === Check if gitleaks is installed ===
@@ -141,5 +141,6 @@ with open(merged_report_path, "w") as f:
 
 print(f"\n✅ Done! Reports saved in {OUTPUT_DIR}/ (deduplicated)")
 print(f"   Global deduped report: {merged_report_path}")
+
 
 
