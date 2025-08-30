@@ -87,8 +87,8 @@ for repo_url in repos:
     # run gitleaks (JSON only, no banner/verbose)
     report_path = os.path.join(OUTPUT_DIR, f"{name}.json")
     subprocess.run([
-        "gitleaks", "detect",
-        "--source", name,
+        "gitleaks", 
+        "git", name,
         "--config", CONFIG_FILE,
         "--report-format", "json",
         "--report-path", report_path,
@@ -134,3 +134,4 @@ with open(merged_report_path, "w") as f:
 
 print(f"\n✅ Done! Reports saved in {OUTPUT_DIR}/ (deduplicated)")
 print(f"   Global deduped report: {merged_report_path}")
+
