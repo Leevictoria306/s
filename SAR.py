@@ -26,7 +26,7 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 # === Colors ===
 PURPLE = "\033[1;35m"
 BOLD_YELLOW = "\033[1;33m"
-BOLD_RED = "\033[1;31m"
+IRed = "\[\033[0;91m\]"
 RESET = "\033[0m"
 
 # === Check if gitleaks is installed ===
@@ -118,7 +118,7 @@ for repo_url in repos:
 
                     # === pretty print finding ===
                     print(f"Finding:           {finding.get('Match')}")
-                    print(f"Secret:            {BOLD_RED}{secret_value}{RESET}")
+                    print(f"Secret:            {IRed}{secret_value}{RESET}")
                     print(f"RuleID:            {BOLD_YELLOW}{finding.get('RuleID')}{RESET}")
                     print(f"Entropy:           {finding.get('Entropy')}")
                     print(f"Date:              {finding.get('Date')}")
@@ -141,3 +141,4 @@ with open(merged_report_path, "w") as f:
 
 print(f"\n✅ Done! Reports saved in {OUTPUT_DIR}/ (deduplicated)")
 print(f"   Global deduped report: {merged_report_path}")
+
